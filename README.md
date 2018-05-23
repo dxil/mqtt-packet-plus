@@ -1,5 +1,8 @@
 # mqtt-packet-plus
-mqtt v5.0
+
+#### mqtt
+[v3.1.1中文版](https://mcxiaoke.gitbooks.io/mqtt-cn/content/mqtt/0309-SUBACK.html)
+[v5.0介绍](https://zhuanlan.zhihu.com/p/37121056)
 
 #### 功能：
 1. generate模块 将客户端发送的报文按5.0规范转成Buffer网络传输
@@ -7,7 +10,7 @@ mqtt v5.0
 
 
 TODO:
-  1. generate:
+1. generate:
   
     - [ ] connect
     - [x] connack
@@ -24,5 +27,5 @@ TODO:
     - [ ] pingresp
     - [ ] disconnect
     
-  2. parse:
+2. parse:
   暂未开发
