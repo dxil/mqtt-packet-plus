@@ -6,7 +6,7 @@
  * type of MQTT Control Packet
  */
 
-export const types = {
+module.exports.types = {
   0: 'reserved',
   1: 'connect',
   2: 'connack',
@@ -26,11 +26,14 @@ export const types = {
 }
 
 /* Mnemonic => Command code */
-export const codes = {}
-for (let k in types) {
-  let v = types[k]
-  codes[v] = k
+module.exports.codes = {}
+for (let k in module.exports.types) {
+  let v = module.exports.types[k]
+  module.exports.codes[v] = k
 }
 
 /* header */
-export const CMD_SHIFT = 4
+module.exports.CMD_SHIFT = 4
+
+/* connack */
+module.exports.SESSIONPRESENT_MASK = 0x01
