@@ -34,6 +34,10 @@ for (let k in module.exports.types) {
 
 /* header */
 module.exports.CMD_SHIFT = 4
+module.exports.DUP_MASK = 0x08
+module.exports.QOS_MASK = 0x03
+module.exports.QOS_SHIFT = 1
+module.exports.RETAIN_MASK = 0x01
 
 /* connack */
 module.exports.SESSIONPRESENT_MASK = 0x01

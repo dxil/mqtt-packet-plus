@@ -1,6 +1,7 @@
 let utils = require('./utlis')
 let protocol = require('./constants')
 
+const emptyBuffer = Buffer.alloc(0)
 module.exports = class Generate {
   /**
     var packet = {
@@ -51,6 +52,7 @@ module.exports = class Generate {
     }
   }
 
+  /* 请求连接 */
   connect () {
     // Todo: 客户端处实现
   }
@@ -120,15 +122,80 @@ module.exports = class Generate {
     return buffer
   }
 
+  /* 发布 */
+  publish () {
+    let dup = this._packet.dup ? protocol.DUP_MASK : 0
+    let qos = this._packet.qos
+    let retain = this._packet.retain ? protocol.RETAIN_MASK : 0
+    let topic = this._packet.topic
+    let payload = this._packet.payload || emptyBuffer
+    let messageId = this._packet.messageId
+
+    // 定义游标和长度
+    let length = 0
+    let pos = 0
+
+    // Topic must be a non-empty string or Buffer
+    if (typeof topic === 'string') {
+      length += Buffer.byteLength(topic) + 2 // +2用于保存Topic长度
+    } else if (Buffer.isBuffer(topic)) {
+      length += topic.length + 2
+    } else {
+      utils.showError('Invalid topic')
+    }
+
+    // Payload length caculate
+    if (Buffer.isBuffer(payload)) {
+      length += Buffer.byteLength(payload)
+    } else {
+      length += payload.length
+    }
+
+    let buffer = Buffer.alloc(1 + this.calcLengthLength(length) + length)
+
+    // Header
+    buffer.writeInt8(
+      protocol.codes['publish'] << protocol.CMD_SHIFT |
+      dup |
+      qos << protocol.QOS_SHIFT |
+      retain, pos++, true)
+
+    // Length
+    pos += this.writeLength(buffer, pos, length)
+
+    // Topic
+    pos += this.writeStringOrBuffer(buffer, pos, topic)
+
+    // MessageId
+    if (qos > 0) {
+      pos += this.writeNumber(buffer, pos, messageId)
+    }
+
+    // Payload
+    if (!Buffer.isBuffer(payload)) {
+      this.writeStringNoPos(buffer, pos, payload)
+    } else {
+      this.writeBuffer(buffer, pos, payload)
+    }
+
+    return buffer
+  }
+
   /**
    * 用于往buffer的pos开始处写入数值，数值最高位需符合大小端进位为符号位
-   * @param {<Buffer> buffer} 传入的buffer
-   * @param {<Number> pos} 目前的游标
-   * @param {<Number> length} 需要写入的长度
+   * @param {<Buffer>} buffer 传入的buffer
+   * @param {<Number>} pos 目前的游标
+   * @param {<Number>} length 需要写入的长度
    * @returns <Number> 返回消耗了多少buffer空间
    * @api private
    */
 
+  // 如果 length = 16385 buffer = [48, 129, 128, 1, 0 ....] 48代表 110000 publish   128 * 127 + 129
+  // 如果 length = 16384 buffer = [48, 128, 128, 1, 0 ....] 48代表 110000 publish   128 * 127 + 128
+  // 如果 length = 16383 buffer = [48, 255, 127, 0, 0 ....] 48代表 110000 publish   128 * 127 + 128
+  // 如果 length = 2097151 buffer = [48, 255, 255, 127, 0 ....]
+  // 如果 length = 128 buffer = [48, 128, 1, 0 ....]
+  // 如果 length = 127 buffer = [48, 127, 0, 0 ....]
   writeLength (buffer, pos, length) {
     let digit = 0
     let origPos = pos // 储存初始游标位置
@@ -148,10 +215,10 @@ module.exports = class Generate {
   /**
    * writeNumber - write a two byte number to the buffer
    *
-   * @param <Buffer> buffer - destination
-   * @param <Number> pos - offset
-   * @param <String> number - number to write
-   * @return <Number> number of bytes written
+   * @param {<Buffer>} buffer - destination
+   * @param {<Number>} pos - offset
+   * @param {<String>} number - number to write
+   * @return {<Number>} number of bytes written
    *
    * @api private
    */
@@ -180,5 +247,74 @@ module.exports = class Generate {
     } else {
       return 0
     }
+  }
+
+  /**
+   * writeStringOrBuffer - write a String or Buffer with the its length prefix 抹平写入Buffer/String的差异性
+   *
+   * @param <Buffer> buffer - destination
+   * @param <Number> pos - offset
+   * @param <String> toWrite - String or Buffer
+   * @return <Number> number of bytes written
+  */
+  writeStringOrBuffer (buffer, pos, toWrite) {
+    let written = 0
+
+    if (toWrite && typeof toWrite === 'string') {
+      written += this.writeString(buffer, pos + written, toWrite)
+    } else if (toWrite) {
+      written += this.writeNumber(buffer, pos + written, toWrite.length)
+      written += this.writeBuffer(buffer, pos + written, toWrite)
+    } else {
+      written += this.writeNumber(buffer, pos + written, 0)
+    }
+
+    return written
+  }
+
+  /**
+   * writeString - write a utf8 string to the buffer
+   *
+   * @param <Buffer> buffer - destination
+   * @param <Number> pos - offset
+   * @param <String> string - string to write
+   * @return <Number> number of bytes written
+   *
+   * @api private
+  */
+  writeString (buffer, pos, string) {
+    let strLen = Buffer.byteLength(string)
+
+    this.writeNumber(buffer, pos, strLen)
+
+    this.writeStringNoPos(buffer, pos + 2, string)
+
+    return strLen + 2
+  }
+
+  /**
+   * Only write string don't write string length
+   * @param {<Buffer>} buffer
+   * @param {<Number>} pos
+   * @param {<String>} string
+   * @api private
+   */
+  writeStringNoPos (buffer, pos, string) {
+    buffer.write(string, pos)
+  }
+
+  /**
+   * write_buffer - write buffer to buffer
+   *
+   * @param {<Buffer>} buffer - dest buffer
+   * @param {<Number>} pos - offset
+   * @param {<Buffer>} src - source buffer
+   * @return {<Number>} number of bytes written
+   *
+   * @api private
+   */
+  writeBuffer (buffer, pos, src) {
+    src.copy(buffer, pos)
+    return src.length
   }
 }

@@ -14,7 +14,7 @@ TODO:
 
     - [ ] connect
     - [x] connack
-    - [ ] publish  // **doing**
+    - [x] publish 
     - [ ] puback
     - [ ] pubrec
     - [ ] pubrel
@@ -28,4 +28,4 @@ TODO:
     - [ ] disconnect
 
 2. parse:
-      暂未开发
+       暂未开发
