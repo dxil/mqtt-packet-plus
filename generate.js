@@ -37,6 +37,7 @@ module.exports = class Generate {
       case 'pubrel':
       case 'pubcomp':
       case 'unsuback':
+        return this.confirmation()
       case 'subscribe':
         return this.subscribe()
       case 'suback':
@@ -181,6 +182,49 @@ module.exports = class Generate {
     return buffer
   }
 
+  /* puback、pubrec、pubrel、pubcomp、unsuback流程可一样处理 */
+  confirmation () {
+    let cmd = this._cmd
+    let messageId = this._packet.messageId
+    let dup = (this._packet.dup && cmd === 'pubrel') ? protocol.DUP_MASK : 0
+    let qos = 0
+
+    if (cmd === 'pubrel') {
+      qos = 1
+    }
+
+    // check messageID
+    if (typeof messageId !== 'number') {
+      utils.showError('Invalid messageId')
+    }
+
+    let buffer = Buffer.alloc(4)
+    let pos = 0
+
+    // Header
+    buffer[pos++] =
+    protocol.codes[cmd] << protocol.CMD_SHIFT |
+    dup |
+    qos << protocol.QOS_SHIFT
+
+    // Length
+    pos += this.writeLength(buffer, pos, 2)
+
+    // Message ID
+    pos += this.writeNumber(buffer, pos, messageId)
+
+    return buffer
+  }
+
+  /* 断开连接 */
+  emptyPacket () {
+    let buffer = Buffer.alloc(2)
+    let cmd = this._cmd
+    buffer[0] = protocol.codes[cmd] << protocol.CMD_SHIFT
+    buffer[1] = 0
+
+    return buffer
+  }
   /**
    * 用于往buffer的pos开始处写入数值，数值最高位需符合大小端进位为符号位
    * @param {<Buffer>} buffer 传入的buffer
