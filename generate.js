@@ -1,7 +1,7 @@
 let utils = require('./utlis')
 let protocol = require('./constants')
 
-const emptyBuffer = Buffer.alloc(0)
+const emptyBuffer = Buffer.from([0])
 module.exports = class Generate {
   /**
     var packet = {
