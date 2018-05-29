@@ -15,17 +15,17 @@ TODO:
     - [ ] connect
     - [x] connack
     - [x] publish 
-    - [ ] puback
-    - [ ] pubrec
-    - [ ] pubrel
-    - [ ] pubcomp
+    - [x] puback
+    - [x] pubrec
+    - [x] pubrel
+    - [x] pubcomp
     - [ ] subscribe
     - [x] suback    
     - [ ] unsubscribe
-    - [ ] unsuback
-    - [ ] pingreq
-    - [ ] pingresp
-    - [ ] disconnect
+    - [x] unsuback
+    - [x] pingreq
+    - [x] pingresp
+    - [x] disconnect
 
 2. parse:
        暂未开发
